@@ -26,6 +26,6 @@ target_sources(
 target_link_libraries(
     ${TARGET_NAME}
     PUBLIC
-    lvgl_lib
-    rlottie_lib
+    lvgl
+    rlottie
 )
