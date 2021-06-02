@@ -4,6 +4,8 @@ Uses [Samsung/rlottie](https://github.com/Samsung/rlottie) library with C-api he
 
 Rlottie build requires C++14-compatible compiler, optionally CMake 3.14.
 
+![lv_lib_rlottie_demo](https://github.com/lvgl/lv_lib_rlottie/raw/master/lv_rlottie.gif)
+
 ## Build setup
 `lv_lib_rottile` can be built with CMake.
 
