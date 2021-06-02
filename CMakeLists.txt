@@ -15,17 +15,16 @@ target_include_directories(${TARGET_NAME}
     "${CMAKE_CURRENT_LIST_DIR}/rlottie_lib/rlottie/inc"
     )
 
-add_subdirectory (rlottie_lib)
+add_subdirectory (lv_lib_rlottie/rlottie_lib)
 
 target_sources(
     ${TARGET_NAME}
     PRIVATE
-    "lv_rlottie.c"
+    "lv_lib_rlottie/lv_rlottie.c"
 )
 
 target_link_libraries(
     ${TARGET_NAME}
     PUBLIC
-    lvgl
     rlottie
 )

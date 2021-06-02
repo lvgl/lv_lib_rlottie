@@ -18,7 +18,9 @@ extern "C" {
 #else
 #include <lvgl/lvgl.h>
 #endif
-  
+
+#include <rlottie_capi.h>
+
 /*********************
  *      DEFINES
  *********************/
@@ -26,6 +28,20 @@ extern "C" {
 /**********************
  *      TYPEDEFS
  **********************/
+typedef struct {
+    lv_img_t img_ext;
+    Lottie_Animation* animation;
+    lv_timer_t* task;
+    lv_img_dsc_t imgdsc;
+    size_t total_frames;
+    size_t current_frame;
+    size_t framerate;
+    uint32_t* allocated_buf;
+    size_t allocated_buffer_size;
+    size_t scanline_width;
+}lv_rlottie_t;
+
+extern const lv_obj_class_t lv_rlottie_class;
 
 /**********************
  * GLOBAL PROTOTYPES

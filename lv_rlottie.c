@@ -8,40 +8,37 @@
   *********************/
 
 #include "lv_rlottie.h"
-#include <rlottie_capi.h>
 
+/*********************
+*      DEFINES
+*********************/
+#define MY_CLASS &lv_rlottie_class
 
- /*********************
-  *      DEFINES
-  *********************/
-#define LV_OBJX_NAME "lv_rlottie"
-
-   /**********************
-    *      TYPEDEFS
-    **********************/
-typedef struct {
-    lv_img_ext_t img_ext;
-    Lottie_Animation* animation;
-    lv_task_t* task;
-    lv_img_dsc_t imgdsc;
-    size_t total_frames;
-    size_t current_frame;
-    size_t framerate;
-    uint32_t* allocated_buf;
-    size_t allocated_buffer_size;
-    size_t scanline_width;
-}lv_rlottie_ext_t;
+/**********************
+*      TYPEDEFS
+**********************/
 
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static void next_frame_task_cb(lv_task_t* t);
-static lv_res_t lv_rlottie_signal(lv_obj_t* btn, lv_signal_t sign, void* param);
+static void lv_rlottie_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj);
+static void lv_rlottie_destructor(const lv_obj_class_t * class_p, lv_obj_t * obj);
+static void next_frame_task_cb(lv_timer_t* t);
 
 /**********************
  *  STATIC VARIABLES
  **********************/
-static lv_signal_cb_t ancestor_signal;
+const lv_obj_class_t lv_rlottie_class = {
+    .constructor_cb = lv_rlottie_constructor,
+    .destructor_cb = lv_rlottie_destructor,
+    .instance_size = sizeof(lv_rlottie_t),
+    .base_class = &lv_img_class
+};
+
+static lv_coord_t create_width;
+static lv_coord_t create_height;
+static const char* rlottie_desc_create;
+static const char* path_create;
 
 /**********************
  *      MACROS
@@ -51,143 +48,135 @@ static lv_signal_cb_t ancestor_signal;
   *   GLOBAL FUNCTIONS
   **********************/
 
-static void common_rlottie_setup(lv_rlottie_ext_t* ext,lv_obj_t* image,lv_obj_t* parent, lv_coord_t width, lv_coord_t height)
-{
-    ext->total_frames = lottie_animation_get_totalframe(ext->animation);
-    ext->framerate = lottie_animation_get_framerate(ext->animation);
-    ext->current_frame = 0;
-
-    lv_coord_t obj_width = LV_MATH_MIN(width, lv_obj_get_width(parent));
-    lv_coord_t obj_height = LV_MATH_MIN(height, lv_obj_get_height(parent));
-
-    ext->scanline_width = obj_width * LV_COLOR_DEPTH / 8;
-
-    size_t allocaled_buf_size = (obj_width * obj_height * LV_COLOR_DEPTH / 8);
-    ext->allocated_buf = lv_mem_alloc(allocaled_buf_size);
-    if (ext->allocated_buf != NULL)
-    {
-        ext->allocated_buffer_size = allocaled_buf_size;
-        memset(ext->allocated_buf, 0, allocaled_buf_size);
-    }
-
-    ext->imgdsc.header.always_zero = 0;
-    ext->imgdsc.header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA;
-    ext->imgdsc.header.h = obj_height;
-    ext->imgdsc.header.w = obj_width;
-    ext->imgdsc.data = ext->allocated_buf;
-    ext->imgdsc.data_size = allocaled_buf_size;
-
-    lv_img_set_src(image, &ext->imgdsc);
-
-    ext->task = lv_task_create(next_frame_task_cb, 10, LV_TASK_PRIO_HIGH, image);
-}
-
 lv_obj_t* lv_rlottie_create_from_file(lv_obj_t* parent, lv_coord_t width, lv_coord_t height, const char* path)
 {
 
-    lv_obj_t* img = lv_img_create(parent, NULL);
-    lv_rlottie_ext_t* ext = lv_obj_allocate_ext_attr(img, sizeof(lv_rlottie_ext_t));
-    LV_ASSERT_MEM(ext);
+    create_width = width;
+    create_height = height;
+    path_create = path;
+    rlottie_desc_create = NULL;
 
-    if (ancestor_signal == NULL) ancestor_signal = lv_obj_get_signal_cb(img);
-    lv_obj_set_signal_cb(img, lv_rlottie_signal);
+    LV_LOG_INFO("begin")
+    lv_obj_t * obj = lv_obj_class_create_obj(MY_CLASS, parent);
+    lv_obj_class_init_obj(obj);
 
-    ext->animation = lottie_animation_from_file(path);
-    if (ext->animation == NULL) return img;
+    return obj;
 
-    common_rlottie_setup(ext, img, parent, width, height);
-
-    return img;
 }
 
 lv_obj_t* lv_rlottie_create_from_raw(lv_obj_t* parent, lv_coord_t width, lv_coord_t height, const char* rlottie_desc)
 {
-    lv_obj_t* img = lv_img_create(parent, NULL);
-    lv_rlottie_ext_t* ext = lv_obj_allocate_ext_attr(img, sizeof(lv_rlottie_ext_t));
-    LV_ASSERT_MEM(ext);
 
-    if (ancestor_signal == NULL) ancestor_signal = lv_obj_get_signal_cb(img);
-    lv_obj_set_signal_cb(img, lv_rlottie_signal);
+    create_width = width;
+    create_height = height;
+    rlottie_desc_create = rlottie_desc;
+    path_create = NULL;
 
-    ext->animation = lottie_animation_from_data(rlottie_desc, rlottie_desc,"");
-    if (ext->animation == NULL) return img;
+    LV_LOG_INFO("begin")
+    lv_obj_t * obj = lv_obj_class_create_obj(MY_CLASS, parent);
+    lv_obj_class_init_obj(obj);
 
-    common_rlottie_setup(ext, img, parent, width, height);
-
-    return img;
+    return obj;
 }
 
 /**********************
  *   STATIC FUNCTIONS
  **********************/
 
-static void next_frame_task_cb(lv_task_t* t)
+static void lv_rlottie_constructor(const lv_obj_class_t * class_p, lv_obj_t * obj)
 {
-    static uint32_t counter = 0;
-    if (counter > 0) {
-        counter--;
+
+    lv_rlottie_t * rlottie = (lv_rlottie_t *) obj;
+
+    if(rlottie_desc_create) {
+        rlottie->animation = lottie_animation_from_data(rlottie_desc_create, rlottie_desc_create,"");
+    }
+    else if(path_create) {
+        rlottie->animation = lottie_animation_from_file(path_create);
+    }
+    if (rlottie->animation == NULL) {
+        LV_LOG_WARN("The aniamtion can't be opened");
         return;
     }
 
-    lv_obj_t* img = t->user_data;
-    lv_rlottie_ext_t* ext = lv_obj_get_ext_attr(img);
-    if (ext->current_frame == ext->total_frames)
-        ext->current_frame = 0;
-    else
-        ++ext->current_frame;
-    
-    lottie_animation_render(
-        ext->animation,
-        ext->current_frame,
-        ext->allocated_buf,
-        ext->imgdsc.header.w,
-        ext->imgdsc.header.h,
-        ext->scanline_width
-    );
+    rlottie->total_frames = lottie_animation_get_totalframe(rlottie->animation);
+    rlottie->framerate = lottie_animation_get_framerate(rlottie->animation);
+    rlottie->current_frame = 0;
 
-    lv_event_send(img, LV_EVENT_LEAVE, NULL);
-    lv_obj_invalidate(img);
-}
+    LV_LOG_USER("%d, %d, %d",rlottie->total_frames, rlottie->framerate, rlottie->current_frame);
 
-/**
- * Signal function of the image
- * @param btn pointer to a button object
- * @param sign a signal type from lv_signal_t enum
- * @param param pointer to a signal specific variable
- * @return LV_RES_OK: the object is not deleted in the function; LV_RES_INV: the object is deleted
- */
-static lv_res_t lv_rlottie_signal(lv_obj_t* img, lv_signal_t sign, void* param)
-{
-    lv_res_t res;
+    lv_obj_t * parent = lv_obj_get_parent(obj);
 
-    /* Include the ancient signal function */
-    res = ancestor_signal(img, sign, param);
-    if (res != LV_RES_OK) return res;
-    if (sign == LV_SIGNAL_GET_TYPE) return lv_obj_handle_get_type_signal(param, LV_OBJX_NAME);
+    rlottie->scanline_width = create_width * LV_COLOR_DEPTH / 8;
 
-    if (sign == LV_SIGNAL_CLEANUP) {
-        lv_rlottie_ext_t* ext = lv_obj_get_ext_attr(img);
-        if (ext->animation) {
-            lottie_animation_destroy(ext->animation);
-            ext->animation = 0;
-            ext->current_frame = 0;
-            ext->framerate = 0;
-            ext->scanline_width = 0;
-            ext->total_frames = 0;
-        }
-
-        if (ext->task){
-            lv_task_del(ext->task);
-            ext->task = NULL;
-        }
-
-        if (ext->allocated_buf) {
-            lv_mem_free(ext->allocated_buf);
-            ext->allocated_buf = NULL;
-            ext->allocated_buffer_size = 0;
-        }
-            
+    size_t allocaled_buf_size = (create_width * create_height * LV_COLOR_DEPTH / 8);
+    rlottie->allocated_buf = lv_mem_alloc(allocaled_buf_size);
+    if (rlottie->allocated_buf != NULL)
+    {
+        rlottie->allocated_buffer_size = allocaled_buf_size;
+        memset(rlottie->allocated_buf, 0, allocaled_buf_size);
     }
 
-    return LV_RES_OK;
+    rlottie->imgdsc.header.always_zero = 0;
+    rlottie->imgdsc.header.cf = LV_IMG_CF_TRUE_COLOR_ALPHA;
+    rlottie->imgdsc.header.h = create_height;
+    rlottie->imgdsc.header.w = create_width;
+    rlottie->imgdsc.data = rlottie->allocated_buf;
+    rlottie->imgdsc.data_size = allocaled_buf_size;
+
+    lv_img_set_src(obj, &rlottie->imgdsc);
+
+    rlottie->task = lv_timer_create(next_frame_task_cb, 1000 / rlottie->framerate, obj);
+
+    lv_obj_update_layout(obj);
+}
+
+
+static void lv_rlottie_destructor(const lv_obj_class_t * class_p, lv_obj_t* obj)
+{
+
+    lv_rlottie_t * rlottie = (lv_rlottie_t *) obj;
+
+    if (rlottie->animation) {
+        lottie_animation_destroy(rlottie->animation);
+        rlottie->animation = 0;
+        rlottie->current_frame = 0;
+        rlottie->framerate = 0;
+        rlottie->scanline_width = 0;
+        rlottie->total_frames = 0;
+    }
+
+    if (rlottie->task){
+        lv_timer_del(rlottie->task);
+        rlottie->task = NULL;
+    }
+
+    if (rlottie->allocated_buf) {
+        lv_mem_free(rlottie->allocated_buf);
+        rlottie->allocated_buf = NULL;
+        rlottie->allocated_buffer_size = 0;
+    }
+
+}
+
+static void next_frame_task_cb(lv_timer_t* t)
+{
+    lv_obj_t* obj = t->user_data;
+    lv_rlottie_t * rlottie = (lv_rlottie_t *) obj;
+    if (rlottie->current_frame == rlottie->total_frames)
+        rlottie->current_frame = 0;
+    else
+        ++rlottie->current_frame;
+
+    lottie_animation_render(
+            rlottie->animation,
+            rlottie->current_frame,
+            rlottie->allocated_buf,
+            rlottie->imgdsc.header.w,
+            rlottie->imgdsc.header.h,
+            rlottie->scanline_width
+    );
+
+    lv_obj_invalidate(obj);
+
 }
