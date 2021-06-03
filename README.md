@@ -4,6 +4,8 @@ Uses [Samsung/rlottie](https://github.com/Samsung/rlottie) library with C-api he
 
 Rlottie build requires C++14-compatible compiler, optionally CMake 3.14.
 
+![lv_lib_rlottie_demo](https://github.com/lvgl/lv_lib_rlottie/raw/master/lv_rlottie.gif)
+
 ## Build setup
 `lv_lib_rottile` can be built with CMake.
 
@@ -40,7 +42,7 @@ https://www.freeformatter.com/json-escape.html
 
 ### Use Rlottie from external file
 
-You can use `card.json` to at first:
+You can use `card.json` at first:
 
 ```c
   lv_obj_t* r2 = lv_rlottie_create_from_file(lv_scr_act(), width, height, "../lv_lib_rlottie/card.json");
