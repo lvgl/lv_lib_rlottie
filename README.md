@@ -1,4 +1,4 @@
-# Rlottie library for LVGL
+# Lottie library for LVGL
 Allows to use Rlottie animations in LVGL. Taken from [base repository](https://github.com/ValentiWorkLearning/lv_rlottie)
 Uses [Samsung/rlottie](https://github.com/Samsung/rlottie) library with C-api header.
 
@@ -80,3 +80,6 @@ You can use `card.json` at first:
 
 Lottie is standard and popular format so you can find many animation files on the web.
 For example: https://lottiefiles.com/ 
+
+You can also create your own animations with Adobe After Effects or similar software.
+
