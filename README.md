@@ -1,4 +1,7 @@
 # Lottie library for LVGL
+
+**This repository is merged into the lvgl repository. See https://docs.lvgl.io/master/libs/rlottie.html**
+
 Allows to use Rlottie animations in LVGL. Taken from [base repository](https://github.com/ValentiWorkLearning/lv_rlottie)
 Uses [Samsung/rlottie](https://github.com/Samsung/rlottie) library with C-api header.
 
