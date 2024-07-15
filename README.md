@@ -79,7 +79,7 @@ You can use `card.json` at first:
 ```
 
 
-## Getting aniamtions
+## Getting animations
 
 Lottie is standard and popular format so you can find many animation files on the web.
 For example: https://lottiefiles.com/ 
