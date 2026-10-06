@@ -67,7 +67,7 @@ lv_obj_t* r1 = lv_rlottie_create_from_raw(parent, width, height, FingerprintRaw)
 #### JSON escaping
 
 For using raw strings it's necessary to escape an image data. For this purpose the following escape tool can be used:
-https://www.freeformatter.com/json-escape.html
+https://jsonviewertool.com/json-escape
 
 
 ### Use Rlottie from external file
